@@ -1,0 +1,39 @@
+package dto
+
+import "avito/pkg"
+
+type Team struct {
+	TeamName string `json:"team_name"`
+
+	Members []TeamMember `json:"members"`
+}
+
+// AssertTeamRequired checks if the required fields are not zero-ed
+func AssertTeamRequired(obj Team) error {
+	elements := map[string]interface{}{
+		"team_name": obj.TeamName,
+		"members":   obj.Members,
+	}
+	for name, el := range elements {
+		if isZero := pkg.IsZeroValue(el); isZero {
+			return &pkg.RequiredError{Field: name}
+		}
+	}
+
+	for _, el := range obj.Members {
+		if err := AssertTeamMemberRequired(el); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// AssertTeamConstraints checks if the values respects the defined constraints
+func AssertTeamConstraints(obj Team) error {
+	for _, el := range obj.Members {
+		if err := AssertTeamMemberConstraints(el); err != nil {
+			return err
+		}
+	}
+	return nil
+}

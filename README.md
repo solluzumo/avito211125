@@ -24,6 +24,8 @@
 Для сборки и запуска проекта в контейнерах выполните:
 
 ```bash
+git clone https://github.com/solluzumo/avito211125.git
+cd avito211125
 docker compose -f testing.docker-compose.yml build --no-cache
 docker compose -f testing.docker-compose.yml up -d
 ```

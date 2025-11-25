@@ -28,6 +28,9 @@ func Response(code int, body interface{}) ImplResponse {
 
 // IsZeroValue checks if the val is the zero-ed value.
 func IsZeroValue(val interface{}) bool {
+	if val == false {
+		return false
+	}
 	return val == nil || reflect.DeepEqual(val, reflect.Zero(reflect.TypeOf(val)).Interface())
 }
 
@@ -130,29 +133,27 @@ func ReadFormFilesToTempFiles(r *http.Request, key string) ([]*os.File, error) {
 }
 
 // Возвращает случайный элемент кроме конкретного в слайсе comparable значений
-func GetRandomElements[T comparable](slice *[]T, cap int) []T {
+func GetRandomElements[T comparable](slice []T, cap int) []T {
+	if len(slice) == 0 || cap <= 0 {
+		return []T{}
+	}
+
 	rand.Seed(time.Now().UnixNano())
 
-	var result []T
+	// создаём копию слайса, чтобы не менять исходный
+	copySlice := make([]T, len(slice))
+	copy(copySlice, slice)
 
-	if len(*slice) == 0 {
-		return result
+	// перемешиваем слайс
+	rand.Shuffle(len(copySlice), func(i, j int) {
+		copySlice[i], copySlice[j] = copySlice[j], copySlice[i]
+	})
+
+	if cap > len(copySlice) {
+		cap = len(copySlice)
 	}
 
-	var randEl T
-
-	for i := 0; i < len(*slice); i++ {
-		if len(result) == cap {
-			break
-		}
-		randomIndex := rand.Intn(len(*slice))
-		randEl = (*slice)[randomIndex]
-
-		result = append(result, randEl)
-
-	}
-
-	return result
+	return copySlice[:cap]
 }
 
 func SliceContains[T comparable](slice []T, target T) bool {

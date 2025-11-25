@@ -28,12 +28,22 @@ func (s *UsersAPIService) UsersSetIsActivePost(ctx context.Context, usersSetIsAc
 	if err != nil {
 		return pkg.Response(http.StatusNotFound, nil), err
 	}
+
 	//Меняем статус пользователя и сохраняем изменения в бд
 	user.IsActive = usersSetIsActivePostRequest.IsActive
 	if err := s.userRepo.UpdateUser(ctx, user); err != nil {
 		return pkg.Response(http.StatusNotFound, nil), err
 	}
-	return pkg.Response(http.StatusOK, user), nil
+	result := &dto.UsersSetIsActivePost200Response{
+		User: dto.User{
+			UserId:   (*user).UserId,
+			Username: (*user).Username,
+			TeamName: (*user).TeamName,
+			IsActive: (*user).IsActive,
+		},
+	}
+
+	return pkg.Response(http.StatusOK, result), nil
 }
 
 // UsersGetReviewGet - Получить PRы, где пользователь назначен ревьювером

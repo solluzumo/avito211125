@@ -49,6 +49,7 @@ type PullRequestsAPIServicer interface {
 type TeamsAPIServicer interface {
 	TeamAddPost(context.Context, dto.Team) (pkg.ImplResponse, error)
 	TeamGetGet(context.Context, string) (pkg.ImplResponse, error)
+	TeamDeactivate(context.Context, string) (pkg.ImplResponse, error)
 }
 
 // UsersAPIServicer defines the api actions for the UsersAPI service

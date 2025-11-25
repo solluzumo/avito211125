@@ -83,6 +83,7 @@ func (c *UsersAPIController) UsersSetIsActivePost(w http.ResponseWriter, r *http
 		c.errorHandler(w, r, &pkg.ParsingError{Err: err}, nil)
 		return
 	}
+
 	if err := dto.AssertUsersSetIsActivePostRequestRequired(usersSetIsActivePostRequestParam); err != nil {
 		c.errorHandler(w, r, err, nil)
 		return
@@ -91,6 +92,7 @@ func (c *UsersAPIController) UsersSetIsActivePost(w http.ResponseWriter, r *http
 		c.errorHandler(w, r, err, nil)
 		return
 	}
+
 	result, err := c.service.UsersSetIsActivePost(r.Context(), usersSetIsActivePostRequestParam)
 	// If an error occurred, encode the error with the status code
 	if err != nil {

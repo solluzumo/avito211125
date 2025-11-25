@@ -1,7 +1,7 @@
 package models
 
 type UserModel struct {
-	UserId string `db:"user_id"`
+	UserId string `db:"id"`
 
 	Username string `db:"username"`
 
@@ -14,7 +14,7 @@ func (UserModel) TableName() string { return "users" }
 
 func (UserModel) FilterFieldMap() map[string]string {
 	return map[string]string{
-		"userId":   "user_id",
+		"userId":   "id",
 		"username": "user_name",
 		"teamName": "team_name",
 		"isActive": "is_active",

@@ -20,13 +20,15 @@ func main() {
 	log.Println("Database is connected.")
 
 	PullRequestRepository := postgres.NewPRPostgresRepository(db)
-	PullRequestsAPIService := service.NewPullRequestsAPIService(*PullRequestRepository)
+	PullUserRepository := postgres.NewUserPostgresRepository(db)
+	PullRequestsAPIService := service.NewPullRequestsAPIService(PullRequestRepository, PullUserRepository)
 	PullRequestsAPIController := api.NewPullRequestsAPIController(PullRequestsAPIService)
 
-	TeamsAPIService := service.NewTeamsAPIService()
+	TeamRepository := postgres.NewTeamPostgresRepository(db)
+	TeamsAPIService := service.NewTeamsAPIService(TeamRepository)
 	TeamsAPIController := api.NewTeamsAPIController(TeamsAPIService)
 
-	UsersAPIService := service.NewUsersAPIService()
+	UsersAPIService := service.NewUsersAPIService(PullUserRepository, PullRequestRepository)
 	UsersAPIController := api.NewUsersAPIController(UsersAPIService)
 
 	router := api.NewRouter(PullRequestsAPIController, TeamsAPIController, UsersAPIController)

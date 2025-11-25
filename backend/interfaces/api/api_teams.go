@@ -71,7 +71,41 @@ func (c *TeamsAPIController) OrderedRoutes() []Route {
 			"/team/get",
 			c.TeamGetGet,
 		},
+		Route{
+			"TeamDeactivate",
+			strings.ToUpper("Post"),
+			"/team/deactivate",
+			c.TeamDeactivate,
+		},
 	}
+}
+
+// TeamDeactivate - массовая деактивация пользователей в команде
+func (c *TeamsAPIController) TeamDeactivate(w http.ResponseWriter, r *http.Request) {
+	var params dto.TeamDeactivatePostRequest
+	d := json.NewDecoder(r.Body)
+	d.DisallowUnknownFields()
+
+	if err := d.Decode(&params); err != nil {
+		c.errorHandler(w, r, &pkg.ParsingError{Err: err}, nil)
+		return
+	}
+
+	// Проверка обязательных полей
+	if params.TeamName == "" {
+		c.errorHandler(w, r, &pkg.RequiredError{Field: "team_name"}, nil)
+		return
+	}
+
+	// Вызов сервисного слоя
+	result, err := c.service.TeamDeactivate(r.Context(), params.TeamName)
+	if err != nil {
+		c.errorHandler(w, r, err, &result)
+		return
+	}
+
+	// Возврат результата клиенту
+	_ = pkg.EncodeJSONResponse(result.Body, &result.Code, w)
 }
 
 // TeamAddPost - Создать команду с участниками (создаёт/обновляет пользователей)

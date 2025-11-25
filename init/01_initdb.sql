@@ -1,29 +1,29 @@
 CREATE TYPE pull_request_status AS ENUM ('MERGED','OPEN');
 
-CREATE TABLE Users (
-    user_id VARCHAR(50) PRIMARY KEY,
+CREATE TABLE users (
+    id VARCHAR(50) PRIMARY KEY,
     username VARCHAR(50) NOT NULL,
     team_name VARCHAR(20),
-    is_active BOOLEAN NOT NULL,
-   
+    is_active BOOLEAN NOT NULL   
 );
 
-CREATE TABLE Team (
+CREATE TABLE teams (
     team_name VARCHAR(20) PRIMARY KEY
 );
 
 CREATE TABLE pull_requests (
-    pull_request_id VARCHAR(50) PRIMARY KEY,
+    id VARCHAR(50) PRIMARY KEY,
     pull_request_name VARCHAR(100) NOT NULL,
     author_id VARCHAR(50),
     status pull_request_status NOT NULL,
-    createdAt TIMESTAMPTZ NOT NULL,
-    mergedAt TIMESTAMPTZ NOT NULL,
+    created_at TIMESTAMPTZ,
+    merged_at TIMESTAMPTZ
 );
 
+
 CREATE TABLE pr_reviewers (
-    pull_request_id INT NOT NULL REFERENCES PR(pull_request_id) ON DELETE CASCADE,
-    user_id INT NOT NULL REFERENCES users(user_id),
+    pull_request_id VARCHAR(50) NOT NULL REFERENCES pull_requests(id) ON DELETE CASCADE,
+    user_id VARCHAR(50) NOT NULL REFERENCES users(id),
     
     PRIMARY KEY (pull_request_id, user_id)
 );

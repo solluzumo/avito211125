@@ -22,16 +22,19 @@ func NewUserPostgresRepository(db *sqlx.DB) *UserPostgresRepository {
 }
 
 func (r *UserPostgresRepository) GetById(ctx context.Context, id string) (*domain.UserDomain, error) {
+	var model *models.UserModel
 	model, err := r.base.GetById(ctx, id)
 	if err != nil {
 		return nil, err
 	}
-	return &domain.UserDomain{
+
+	res := &domain.UserDomain{
 		UserId:   model.UserId,
 		Username: model.Username,
 		TeamName: model.TeamName,
 		IsActive: model.IsActive,
-	}, nil
+	}
+	return res, nil
 }
 
 func (r *UserPostgresRepository) GetList(ctx context.Context, req *common.ListRequest) (*common.ListResponse[domain.UserDomain], error) {
@@ -45,15 +48,22 @@ func (r *UserPostgresRepository) GetList(ctx context.Context, req *common.ListRe
 	}, nil
 }
 
-func (r *UserPostgresRepository) UpdateUser(ctx context.Context, user *models.UserModel) error {
+func (r *UserPostgresRepository) UpdateUser(ctx context.Context, user *domain.UserDomain) error {
+
+	modelObj := &models.UserModel{
+		UserId:   user.UserId,
+		Username: user.Username,
+		TeamName: user.TeamName,
+		IsActive: user.IsActive,
+	}
+
 	query := `
 		UPDATE users
-		SET user_id = :user_id,
-		username = :username,
+		SET	username = :username,
 		team_name = :team_name,
 		is_active = :is_active
 	`
-	result, err := r.base.DB.NamedExec(query, *user)
+	result, err := r.base.DB.NamedExec(query, *modelObj)
 	if err != nil {
 		return err
 	}

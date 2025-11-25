@@ -30,9 +30,9 @@ func (r *PRPostgresRepository) GetPullRequestListForUser(ctx context.Context, us
 			pr.*,
 			ARRAY_AGG(prr_all.user_id ORDER BY prr_all.user_id) AS reviewers
 		FROM pull_requests pr
-		JOIN pr_reviewers prr_filter ON prr_filter.pull_request_id = pr.pull_request_id AND prr_filter.user_id = $1
-		JOIN pr_reviewers prr_all ON prr_all.pull_request_id = pr.pull_request_id
-		GROUP BY pr.pull_request_id;
+		JOIN pr_reviewers prr_filter ON prr_filter.pull_request_id = pr.id AND prr_filter.user_id = $1
+		JOIN pr_reviewers prr_all ON prr_all.pull_request_id = pr.id
+		GROUP BY pr.id;
 	`
 	if err := r.base.DB.SelectContext(ctx, &list, query, userId); err != nil {
 		return nil, err
@@ -49,9 +49,9 @@ func (r *PRPostgresRepository) GetList(ctx context.Context, req *common.ListRequ
 			pr.*,
 			ARRAY_AGG(prr_all.user_id ORDER BY prr_all.user_id) AS reviewers
 		FROM pull_requests pr
-		JOIN pr_reviewers prr_filter ON prr_filter.pull_request_id = pr.pull_request_id
-		JOIN pr_reviewers prr_all ON prr_all.pull_request_id = pr.pull_request_id
-		GROUP BY pr.pull_request_id;
+		JOIN pr_reviewers prr_filter ON prr_filter.pull_request_id = pr.id 
+		JOIN pr_reviewers prr_all ON prr_all.pull_request_id = pr.id
+		GROUP BY pr.id;
 	`
 	if err := r.base.DB.SelectContext(ctx, &list, query); err != nil {
 		return nil, err
@@ -63,17 +63,30 @@ func (r *PRPostgresRepository) GetList(ctx context.Context, req *common.ListRequ
 }
 
 func (r *PRPostgresRepository) GetById(ctx context.Context, id string) (*domain.PullRequestDomain, error) {
-	model, err := r.base.GetById(ctx, id)
-	if err != nil {
+	var model models.PullRequestModel
+
+	query := `
+		SELECT
+			pr.*,
+			ARRAY_AGG(prr.user_id ORDER BY prr.user_id) AS reviewers
+		FROM pull_requests pr
+		LEFT JOIN pr_reviewers prr ON prr.pull_request_id = pr.id
+		WHERE pr.id = $1
+		GROUP BY pr.id;
+
+	`
+	if err := r.base.DB.GetContext(ctx, &model, query, id); err != nil {
 		return nil, err
 	}
+
 	return &domain.PullRequestDomain{
-		PullRequestId:   model.PullRequestId,
-		PullRequestName: model.PullRequestName,
-		AuthorId:        model.AuthorId,
-		Status:          model.Status,
-		CreatedAt:       model.CreatedAt,
-		MergedAt:        model.MergedAt,
+		PullRequestId:     model.PullRequestId,
+		PullRequestName:   model.PullRequestName,
+		AuthorId:          model.AuthorId,
+		Status:            model.Status,
+		AssignedReviewers: []string(model.AssignedReviewers),
+		CreatedAt:         model.CreatedAt,
+		MergedAt:          model.MergedAt,
 	}, nil
 }
 
@@ -94,7 +107,7 @@ func (r *PRPostgresRepository) UpdatePullRequest(ctx context.Context, pr *domain
 			status = :status,
 			created_at = :created_at,
 			merged_at = :merged_at
-		WHERE pull_request_id = :pull_request_id
+		WHERE id = :id
 	`
 	result, err := r.base.DB.NamedExec(query, *prModel)
 	if err != nil {
@@ -127,24 +140,32 @@ func (r *PRPostgresRepository) DeleteReviewers(ctx context.Context, pullRequestI
 }
 
 // UpdatePullRequestReviewers - Обновить ревьюеров
-func (r *PRPostgresRepository) UpdatePullRequestReviewers(ctx context.Context, pullRequestID string, userIDS []string) error {
-	//Если некого поставить ревьюером, удаляем все записи о бывших ревьюерах
-	if len(userIDS) == 0 {
-		if err := r.DeleteReviewers(ctx, pullRequestID); err != nil {
-			return err
-		}
-	}
-	links := make([]models.PullRequstReviewersModel, len(userIDS))
-	for i := 0; i < len(userIDS); i++ {
-		links[i] = models.PullRequstReviewersModel{PullRequestId: pullRequestID, UserId: userIDS[i]}
-	}
+func (r *PRPostgresRepository) UpdatePullRequestReviewers(
+	ctx context.Context,
+	pullRequestID string,
+	userIDs []string,
+) error {
 
-	//Привязываем ревьюеров
-	if err := r.LinkReviewers(ctx, links); err != nil {
+	// Удаляем ВСЕ старые связи
+	if err := r.DeleteReviewers(ctx, pullRequestID); err != nil {
 		return err
 	}
 
-	return nil
+	// Если новых нет, то выходим
+	if len(userIDs) == 0 {
+		return nil
+	}
+
+	// Создаём новые связи
+	links := make([]models.PullRequstReviewersModel, len(userIDs))
+	for i := range userIDs {
+		links[i] = models.PullRequstReviewersModel{
+			PullRequestId: pullRequestID,
+			UserId:        userIDs[i],
+		}
+	}
+
+	return r.LinkReviewers(ctx, links)
 }
 
 func (r *PRPostgresRepository) CreatePullRequest(ctx context.Context, pr *domain.PullRequestDomain) error {
@@ -160,14 +181,14 @@ func (r *PRPostgresRepository) CreatePullRequest(ctx context.Context, pr *domain
 
 	query := `
 		INSERT INTO pull_requests(
-			pull_request_id,
+			id,
 			pull_request_name,
 			author_id,
 			status,			
 			created_at,
 			merged_at
 		)VALUES(
-		 :pull_request_id,
+		 :id,
 		 :pull_request_name,
 		 :author_id,
 		 :status,

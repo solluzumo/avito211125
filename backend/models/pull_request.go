@@ -7,7 +7,7 @@ import (
 )
 
 type PullRequestModel struct {
-	PullRequestId string `db:"pull_request_id"`
+	PullRequestId string `db:"id"`
 
 	PullRequestName string `db:"pull_request_name"`
 
@@ -27,7 +27,7 @@ func (PullRequestModel) TableName() string { return "pull_requests" }
 
 func (PullRequestModel) FilterFieldMap() map[string]string {
 	return map[string]string{
-		"pullRequestId":     "pull_request_id",
+		"pullRequestId":     "id",
 		"pullRequestName":   "pull_request_name",
 		"authorId":          "author_id",
 		"status":            "status",
